@@ -1,7 +1,7 @@
 use std::cmp::{max, min};
 use std::ops::Deref;
+use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::Arc;
-use std::sync::atomic::AtomicI64;
 
 use thiserror::Error;
 
@@ -13,7 +13,30 @@ enum TokenError {
 
 pub enum SequenceFormat {
     Raw,
-    PaddedInt(i8, String),
+    PaddedInt(usize, char),
+}
+
+fn left_pad<T>(value: T, length: usize, pad_char: char) -> String
+where
+    T: ToString,
+{
+    let value_str = value.to_string();
+    let value_len = value_str.len();
+    if value_len >= length {
+        return value_str;
+    }
+    let pad_len = length - value_len;
+    let pad_str = pad_char.to_string().repeat(pad_len);
+    format!("{}{}", pad_str, value_str)
+}
+
+impl SequenceFormat {
+    pub fn apply(&self, seq: i64) -> String {
+        match self {
+            SequenceFormat::Raw => seq.to_string(),
+            SequenceFormat::PaddedInt(len, chr) => left_pad(seq, *len, *chr),
+        }
+    }
 }
 
 pub enum TokenFormat {
@@ -30,6 +53,7 @@ pub enum TokenFormat {
     Sequence(SequenceFormat),
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct Token(String);
 
 impl Deref for Token {
@@ -43,22 +67,28 @@ trait TokenGenerator {
     fn generate(&self, format: TokenFormat) -> Result<Token, TokenError>;
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, Debug)]
 struct InMemoryTokenGenerator {
-    sequence: Arc<AtomicI64>
+    sequence: Arc<AtomicI64>,
 }
 
 impl InMemoryTokenGenerator {
     pub fn new() -> InMemoryTokenGenerator {
         InMemoryTokenGenerator {
-            sequence: Arc::new(AtomicI64::new(1))
+            sequence: Arc::new(AtomicI64::new(1)),
         }
     }
 }
 
 impl TokenGenerator for InMemoryTokenGenerator {
-    fn generate(&self,format: TokenFormat) -> Result<Token, TokenError> {
-        todo!()
+    fn generate(&self, format: TokenFormat) -> Result<Token, TokenError> {
+        match format {
+            TokenFormat::Uuid => Ok(Token(uuid::Uuid::new_v4().to_string())),
+            TokenFormat::Sequence(format) => {
+                let seq = self.sequence.deref().fetch_add(1, Ordering::SeqCst);
+                Ok(Token(format.apply(seq)))
+            }
+        }
     }
 }
 
@@ -168,5 +198,39 @@ mod tests {
             policy.generate("_1_".to_string(), "CARMEN".to_string()),
             "TOK-CARM_1_EN"
         );
+    }
+
+    #[test]
+    fn in_memory_token_generator_samples() {
+        let generator = InMemoryTokenGenerator::new();
+
+        let seq1 = &generator.generate(TokenFormat::Sequence(SequenceFormat::Raw));
+        let seq2 = &generator.generate(TokenFormat::Sequence(SequenceFormat::Raw));
+
+        let x1 = seq1.as_ref().unwrap().deref();
+        let x2 = seq2.as_ref().unwrap().deref();
+        assert_ne!(x1, x2);
+
+        assert_eq!(x1.parse::<i64>().unwrap(), 1);
+        assert_eq!(x2.parse::<i64>().unwrap(), 2);
+    }
+
+    #[test]
+    fn in_memory_token_generator_uuid() {
+        let generator = InMemoryTokenGenerator::new();
+
+        let seq1 = &generator.generate(TokenFormat::Uuid);
+        let seq2 = &generator.generate(TokenFormat::Uuid);
+
+        let x1 = seq1.as_ref().unwrap().deref();
+        let x2 = seq2.as_ref().unwrap().deref();
+        assert_ne!(x1, x2);
+
+        let regex_pattern = r"^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$";
+        let regex = regex::Regex::new(regex_pattern).unwrap();
+
+        print!(">>>{:?}<<<", x1);
+        assert!(regex.is_match(x1));
+        assert!(regex.is_match(x2));
     }
 }
