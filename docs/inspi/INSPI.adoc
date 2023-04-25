@@ -1,0 +1,88 @@
+[quote, Tokenization (data_security), https://en.wikipedia.org/wiki/Tokenization_(data_security)]
+____
+Tokenization is a non-mathematical approach that replaces sensitive data with non-sensitive substitutes without altering the type or length of data. This is an important distinction from encryption because changes in data length and type can render information unreadable in intermediate systems such as databases. Tokenized data can still be processed by legacy systems which makes tokenization more flexible than classic encryption.
+____
+
+
+[quote, https://www.hindawi.com/journals/misy/2016/5046284/]
+____
+In a Tokenization system, two processes are important: Tokenization and de-Tokenization. Tokenization is the process wherein the actual data is replaced with a surrogate value as token; and de-Tokenization is the reverse process of redeeming a token for its associated actual value
+____
+
+
+[quote]
+____
+According to existing standards and specifications, Tokenization systems have some common components and considerable issues: Token Generation, Token Mapping, Token Data Store (i.e., data vault), Encrypted Data Storage, and Cryptographic Key Management.
+
+(i)*Token Generation*. In study [16], Token Generation is defined as the process of creating a token by using any method such as mathematically reversible cryptographic function based on strong encryption algorithms and key management mechanisms, one-way nonreversible cryptographic functions (e.g., a hash function with strong, secret salt), or assignment through a randomly generated number. Exchanging tokens instead of actual values is a popular approach for enabling the protection of sensitive data like credit card numbers; there is no direct relationship between the original value and the token, so the original data cannot be determined from the token [16, 18, 19]. Random Number Generator (RNG) algorithms are generally the most recommended solution for creating token values [16, 17]. According to the Federal Information Processing Standards (FIPS140-2), RNGs used for cryptographic applications typically produce a sequence of zero and one bits that may be combined into subsequences or blocks of random numbers [20]. They are easy to adapt to any format constraints and offer high security since the value cannot be reverse engineered. Thus, using random token values is a desirable solution in Tokenization systems.
+
+(ii)*Token Mapping*. Token Mapping is the second important common component that refers the assignment of the generated token value to its original value. A secure cross-reference table needs to be established to allow authorized look-up of the original value using the token as the index [16].
+
+(iii)*Token Data Store*. Token Data Store is a central repository for the Token Mapping process and stores original values and corresponding token values following the Token Generation process [16]. The sensitive data and token values need to be securely stored in an encrypted format on data servers. In addition, these servers need to provide efficient authentication services, return sensitive data, or restrict transactions as necessary.
+
+(iv)*Encrypted Data Storage*. It is customary to encrypt the sensitive data at rest. The cryptographic algorithms are mainly classified as symmetric or asymmetric. The advantage of symmetric algorithms is their speed; however, the key management issue needs to be handled more efficiently due to same key usage for encryption and decryption. The most popular current symmetric encryption methods are AES and Triple DES. In the case of database encryption, two options exist: cell/column level encryption and Transparent Data Encryption (TDE). The cell/column level encryption technique is applied to individual columns/rows/cells within a database. It allows a data server to store data from different applications in the same database using different encryption keys [21–23]. TDE was first introduced in Microsoft SQL Server 2008 and is designed to provide protection to the entire database at rest, without affecting existing applications. It encrypts the entire database including the backups and log files using a single key that is called *database encryption key* and algorithms such as AES or Triple DES [21–23].
+
+(v)*Cryptographic Key Management*. It is important to provide strong key management mechanisms for sensitive data encryption on Token Data Stores. The cryptographic keys should be created, managed, and protected; Token Servers need to have one or more unique keys to encrypt sensitive data. In this context, KMIP (Key Management Interoperability Protocol) is an important and popular standard for interoperable Cloud-based key management, which is provided by OASIS (Organization for the Advancement of the Structured Information Society). KMIP provides a comprehensive protocol for communication between enterprise key management servers and cryptographic clients [24]. It is essential to emphasize that data encryption and key management implementations complement the Tokenization method by protecting the original value.
+____
+
+
+image::./misc/images/PCIDSS-type-of-tokens.png[]
+
+
+
+## Thalès - vormetric
+
+
+
+image::./misc/images/VORMETRIC-vaultless-tokenization-data-masking.jpg[]
+
+
+
+image::./misc/images/VORMETRIC-tokenization-template_1.png[]
+
+
+== Resources
+
+* https://www.hindawi.com/journals/misy/2016/5046284/
+* https://en.wikipedia.org/wiki/Tokenization_(data_security)
+* https://www.pcisecuritystandards.org/documents/Tokenization_Product_Security_Guidelines.pdf
+* http://go.thalesesecurity.com/rs/480-LWA-970/images/The-Power-of-Tokenization-wp.pdf
+* https://cpl.thalesgroup.com/encryption/vormetric-application-crypto-suite/vormetric-application-encryption/tokenization-data-masking
+* https://github.com/jmcvetta/tokenizerd
+* 
+
+https://medium.com/hashicorp-engineering/advanced-data-protection-with-hashicorp-vault-96839b6b22af
+https://learn.hashicorp.com/tutorials/vault/tokenization?in=vault/adp
+https://www.vaultproject.io/api-docs/secret/transform#create-update-store-schema
+https://www.vaultproject.io/docs/secrets/transform/tokenization
+https://www.vaultproject.io/docs/secrets/transform
+https://en.wikipedia.org/wiki/Format-preserving_encryption
+https://github.com/mysto/java-fpe
+https://github.com/jmcvetta/tokenizerd
+https://docs.skyflow.com/
+https://www.adyen.com/blog/securing-your-personal-data-via-tokenization
+https://www.skyflow.com/post/demystifying-tokenization-what-every-engineer-should-know
+https://cpl.thalesgroup.com/encryption/tokenization
+https://www.encryptionconsulting.com/education-center/encryption-vs-tokenization
+https://baffle.io/blog/why-data-tokenization-is-insecure/
+
+
+https://dba.stackexchange.com/questions/110582/uniqueness-constraint-with-date-range
+[quote]
+____
+[source,sql]
+....
+ALTER TABLE prices 
+  ADD CONSTRAINT unique_price_per_product_quantity_daterange
+    EXCLUDE  USING gist
+    ( product_id WITH =, 
+      quantity WITH =, 
+      daterange(start_date, end_date, '[]') WITH &&   -- this is the crucial
+    );
+....
+The constraint can be interpreted as saying:
+
+Don't allow two rows that have same product_id, same quantity and overlapping (&&) date ranges.
+____
+
+

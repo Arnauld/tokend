@@ -1,0 +1,6 @@
+# Dev. Notes
+
+.Powershell
+[source,shell]
+$env:RUST_BACKTRACE=1; cargo test
+
