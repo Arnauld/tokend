@@ -229,7 +229,6 @@ mod tests {
         let regex_pattern = r"^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$";
         let regex = regex::Regex::new(regex_pattern).unwrap();
 
-        print!(">>>{:?}<<<", x1);
         assert!(regex.is_match(x1));
         assert!(regex.is_match(x2));
     }
