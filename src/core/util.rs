@@ -1,6 +1,6 @@
 pub fn left_pad<T>(value: T, length: usize, pad_char: char) -> String
-    where
-        T: ToString,
+where
+    T: ToString,
 {
     let value_str = value.to_string();
     let value_len = value_str.len();

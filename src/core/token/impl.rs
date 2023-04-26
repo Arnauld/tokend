@@ -1,9 +1,11 @@
+use crate::core::token::{
+    Policy, RawTokenGenerator, Token, TokenError, TokenFormat, TokenGenerator,
+};
+use secrecy::{ExposeSecret, Secret, Zeroize};
 use std::cmp::{max, min};
 use std::ops::Deref;
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::Arc;
-use secrecy::{Secret, ExposeSecret, Zeroize};
-use crate::core::token::{Policy, RawTokenGenerator, Token, TokenFormat, TokenGenerator, TokenError};
 
 #[derive(Clone, Debug)]
 struct InMemoryRawTokenGenerator {
@@ -32,20 +34,27 @@ impl RawTokenGenerator for InMemoryRawTokenGenerator {
 }
 
 #[derive(Clone, Debug)]
-struct DefaultTokenGenerator<G> where G: RawTokenGenerator {
+struct DefaultTokenGenerator<G>
+where
+    G: RawTokenGenerator,
+{
     delegate: G,
 }
 
 impl<G> TokenGenerator for DefaultTokenGenerator<G>
-    where G: RawTokenGenerator {
+where
+    G: RawTokenGenerator,
+{
     fn generate(&self, policy: &Policy, value: Secret<String>) -> Result<Token, TokenError> {
         let raw_token = self.delegate.generate(&policy.format)?;
         Ok(format(&policy, raw_token, value).into())
     }
 }
 
-
-pub fn format<T>(policy: &Policy, raw_token: String, value: Secret<T>) -> String where T: ToString + Zeroize {
+pub fn format<T>(policy: &Policy, raw_token: String, value: Secret<T>) -> String
+where
+    T: ToString + Zeroize,
+{
     let unsecure = value.expose_secret().to_string();
     let idx_left = min(policy.keep_left as i32, unsecure.len() as i32);
     let left = &unsecure[0..idx_left as usize];
@@ -69,8 +78,8 @@ pub fn format<T>(policy: &Policy, raw_token: String, value: Secret<T>) -> String
 
 #[cfg(test)]
 mod tests {
-    use crate::core::token::SequenceFormat;
     use super::*;
+    use crate::core::token::SequenceFormat;
 
     #[test]
     fn format_nominal_case() {
@@ -83,7 +92,11 @@ mod tests {
         };
 
         assert_eq!(
-            format(&policy, "_1_".to_string(), Secret::new("CARMEN MCCALLUM".to_string())),
+            format(
+                &policy,
+                "_1_".to_string(),
+                Secret::new("CARMEN MCCALLUM".to_string())
+            ),
             "TOK-CA_1_LUM"
         );
     }
@@ -131,7 +144,11 @@ mod tests {
         };
 
         assert_eq!(
-            format(&policy,"_1_".to_string(), Secret::new("CARMEN".to_string())),
+            format(
+                &policy,
+                "_1_".to_string(),
+                Secret::new("CARMEN".to_string())
+            ),
             "TOK-CARM_1_EN"
         );
     }

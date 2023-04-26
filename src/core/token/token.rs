@@ -1,14 +1,13 @@
-use std::ops::Deref;
-use secrecy::Secret;
-use thiserror::Error;
 use crate::core::util;
+use secrecy::Secret;
+use std::ops::Deref;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum TokenError {
     #[error("Token Generation Failed {0}")]
     GenerationFailure(String),
 }
-
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Token(String);
@@ -40,7 +39,6 @@ impl SequenceFormat {
     }
 }
 
-
 pub enum TokenFormat {
     /// UUID
     Uuid,
@@ -54,7 +52,6 @@ pub enum TokenFormat {
     /// * (37, PaddedInt(4,"0")) will produce "0037"
     Sequence(SequenceFormat),
 }
-
 
 pub struct Policy {
     /// Unique identifier of the policy
