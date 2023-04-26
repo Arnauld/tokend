@@ -19,8 +19,8 @@ impl InMemoryRawTokenGenerator {
 }
 
 impl RawTokenGenerator for InMemoryRawTokenGenerator {
-    fn generate(&self, policy: &Policy) -> Result<String, TokenError> {
-        let raw_token = match &policy.format {
+    fn generate(&self, token_format: &TokenFormat) -> Result<String, TokenError> {
+        let raw_token = match &token_format {
             TokenFormat::Uuid => uuid::Uuid::new_v4().to_string(),
             TokenFormat::Sequence(formatter) => {
                 let seq = self.sequence.deref().fetch_add(1, Ordering::SeqCst);
@@ -39,7 +39,7 @@ struct DefaultTokenGenerator<G> where G: RawTokenGenerator {
 impl<G> TokenGenerator for DefaultTokenGenerator<G>
     where G: RawTokenGenerator {
     fn generate(&self, policy: &Policy, value: Secret<String>) -> Result<Token, TokenError> {
-        let raw_token = self.delegate.generate(&policy)?;
+        let raw_token = self.delegate.generate(&policy.format)?;
         Ok(format(&policy, raw_token, value).into())
     }
 }
@@ -83,7 +83,7 @@ mod tests {
         };
 
         assert_eq!(
-            policy.generate("_1_".to_string(), "CARMEN MCCALLUM".to_string()),
+            format(&policy, "_1_".to_string(), Secret::new("CARMEN MCCALLUM".to_string())),
             "TOK-CA_1_LUM"
         );
     }
@@ -99,7 +99,7 @@ mod tests {
         };
 
         assert_eq!(
-            policy.format("_1_".to_string(), "ZO".to_string()),
+            format(&policy, "_1_".to_string(), Secret::new("ZO".to_string())),
             "TOK-ZO_1_"
         );
     }
@@ -115,7 +115,7 @@ mod tests {
         };
 
         assert_eq!(
-            policy.format("_1_".to_string(), "ZO".to_string()),
+            format(&policy, "_1_".to_string(), Secret::new("ZO".to_string())),
             "TOK-_1_ZO"
         );
     }
@@ -131,17 +131,18 @@ mod tests {
         };
 
         assert_eq!(
-            policy.format("_1_".to_string(), "CARMEN".to_string()),
+            format(&policy,"_1_".to_string(), Secret::new("CARMEN".to_string())),
             "TOK-CARM_1_EN"
         );
     }
 
     #[test]
-    fn in_memory_token_generator_samples() {
-        let generator = InMemoryTokenGenerator::new();
+    fn in_memory_raw_token_generator_samples() {
+        let generator = InMemoryRawTokenGenerator::new();
+        let token_format = TokenFormat::Sequence(SequenceFormat::Raw);
 
-        let seq1 = &generator.generate(TokenFormat::Sequence(SequenceFormat::Raw));
-        let seq2 = &generator.generate(TokenFormat::Sequence(SequenceFormat::Raw));
+        let seq1 = &generator.generate(&token_format);
+        let seq2 = &generator.generate(&token_format);
 
         let x1 = seq1.as_ref().unwrap().deref();
         let x2 = seq2.as_ref().unwrap().deref();
@@ -152,11 +153,12 @@ mod tests {
     }
 
     #[test]
-    fn in_memory_token_generator_uuid() {
-        let generator = InMemoryTokenGenerator::new();
+    fn in_memory_raw_token_generator_uuid() {
+        let generator = InMemoryRawTokenGenerator::new();
+        let token_format = TokenFormat::Uuid;
 
-        let seq1 = &generator.generate(TokenFormat::Uuid);
-        let seq2 = &generator.generate(TokenFormat::Uuid);
+        let seq1 = &generator.generate(&token_format);
+        let seq2 = &generator.generate(&token_format);
 
         let x1 = seq1.as_ref().unwrap().deref();
         let x2 = seq2.as_ref().unwrap().deref();

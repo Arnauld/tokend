@@ -78,5 +78,5 @@ pub trait TokenGenerator {
 }
 
 pub trait RawTokenGenerator {
-    fn generate(&self, policy: &Policy) -> Result<String, TokenError>;
+    fn generate(&self, token_format: &TokenFormat) -> Result<String, TokenError>;
 }
