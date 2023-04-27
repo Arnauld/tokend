@@ -3,7 +3,8 @@
 CREATE SCHEMA IF NOT EXISTS dev;
 
 --ROLE tokend_dev
-CALL create_role_if_not_exists('tokend_dev', 'WITH PASSWORD ''dev_p'' NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION BYPASSRLS');
+-- NOTE that 'tokend_dev' has LOGIN permission to ease 'sqlx migrate' cli behavior instead of using *_mig user
+CALL create_role_if_not_exists('tokend_dev', 'WITH PASSWORD ''dev_p'' NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION BYPASSRLS');
 ALTER SCHEMA dev OWNER TO tokend_dev;
 ALTER ROLE tokend_dev IN DATABASE tokend SET search_path to dev, public;
 
@@ -22,7 +23,7 @@ CALL create_role_if_not_exists('tokend_dev_mig', 'WITH PASSWORD ''dev_p'' NOSUPE
 ALTER ROLE tokend_dev_mig IN DATABASE tokend SET search_path to dev, public;
 GRANT tokend_dev TO tokend_dev_mig;
 
---ROLE dev_READONLY
+--ROLE tokend_dev_READONLY
 CALL create_role_if_not_exists('tokend_dev_readonly', 'WITH PASSWORD ''dev_p'' NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS');
 ALTER ROLE tokend_dev_readonly IN DATABASE tokend SET search_path to dev, public;
 GRANT SELECT ON ALL TABLES IN SCHEMA dev TO tokend_dev_readonly;
