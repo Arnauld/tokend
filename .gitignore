@@ -2,3 +2,4 @@
 .idea/
 *.iml
 tarpaulin-report.html
+.env
