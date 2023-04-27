@@ -4,8 +4,8 @@ use std::fmt::Formatter;
 use config::ConfigError;
 use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Deserializer};
-use sqlx::ConnectOptions;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
+use sqlx::ConnectOptions;
 use tracing::metadata::LevelFilter;
 
 use crate::error::Error as TError;
@@ -25,7 +25,7 @@ pub struct WebSettings {
 pub struct DatabaseCredentials {
     pub username: String,
     pub password: Secret<String>,
-    pub on_behalf_on: Option<String>,
+    pub on_behalf_of: Option<String>,
 }
 
 #[derive(Eq, PartialEq, Hash)]
@@ -47,8 +47,8 @@ impl std::fmt::Display for DatabaseRole {
 
 impl<'de> Deserialize<'de> for DatabaseRole {
     fn deserialize<D>(deserializer: D) -> Result<DatabaseRole, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let s: String = String::deserialize(deserializer)?;
         match s.to_lowercase().as_str() {
@@ -78,7 +78,10 @@ impl DatabaseSettings {
         } else {
             PgSslMode::Prefer
         };
-        let creds = self.roles.get(role).expect(format!("Missing role credentials {role}").as_str());
+        let creds = self
+            .roles
+            .get(role)
+            .expect(format!("Missing role credentials {role}").as_str());
         PgConnectOptions::new()
             .host(&self.host)
             .username(creds.username.as_str())
@@ -103,8 +106,7 @@ fn check_settings(environment: &Environment, settings: &Settings) {
 }
 
 pub fn get_configuration() -> Result<Settings, TError> {
-    let config_dir = std::env::var("APP_CONFIG_DIR")
-        .expect("'APP_CONFIG_DIR' not defined");
+    let config_dir = std::env::var("APP_CONFIG_DIR").expect("'APP_CONFIG_DIR' not defined");
     let config_dir = std::path::PathBuf::from(config_dir);
 
     // Detect the running environment.
@@ -116,12 +118,8 @@ pub fn get_configuration() -> Result<Settings, TError> {
 
     let environment_filename = format!("{}.yaml", &environment.as_str());
     let settings = config::Config::builder()
-        .add_source(config::File::from(
-            config_dir.join("base.yaml"),
-        ))
-        .add_source(config::File::from(
-            config_dir.join(environment_filename),
-        ))
+        .add_source(config::File::from(config_dir.join("base.yaml")))
+        .add_source(config::File::from(config_dir.join(environment_filename)))
         // Add in settings from environment variables (with a prefix of APP and '__' as separator)
         // E.g. `APP_APPLICATION__PORT=5001 would set `Settings.application.port`
         .add_source(
@@ -136,7 +134,7 @@ pub fn get_configuration() -> Result<Settings, TError> {
             check_settings(&environment, &settings);
             Ok(settings)
         }
-        Err(err) => Err(err.into())
+        Err(err) => Err(err.into()),
     }
 }
 
@@ -172,4 +170,3 @@ impl TryFrom<String> for Environment {
         }
     }
 }
-

@@ -19,8 +19,7 @@ async fn get_configuration_test_config() {
 async fn create_new_database_and_execute_migrations() {
     std::env::set_var("APP_ENVIRONMENT", "local");
     std::env::set_var("APP_CONFIG_DIR", "./conf");
-    let settings = tokend::infra::config::get_configuration().expect("Failed to load config");
+    let settings = crate::helpers::startup::random_configuration().await;
 
-
+    crate::helpers::startup::spawn_db(&settings.database).await;
 }
-

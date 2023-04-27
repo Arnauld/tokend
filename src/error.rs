@@ -65,7 +65,7 @@ pub enum Error {
 
     /// Propagate a ConfigError
     #[error("Unknown CallerType: {0}")]
-    ConfigError(config::ConfigError)
+    ConfigError(config::ConfigError),
 }
 
 impl From<config::ConfigError> for Error {

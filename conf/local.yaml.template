@@ -2,12 +2,17 @@ database:
   database_name: tokend
   host: localhost
   port: 5432
-  role_app:
-    username: tokend_dev_app
-    password: dev_p
-  role_mig:
-    username: tokend_dev_mig
-    password: dev_p
+  roles:
+    root:
+        username: postgres
+        password: changeme
+    application:
+        username: tokend_dev_app
+        password: dev_p
+    migration:
+        username: tokend_dev_mig
+        password: dev_p
+        on_behalf_of: tokend_dev
   role_owner: tokend_dev
 
 web:

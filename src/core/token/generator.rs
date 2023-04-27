@@ -62,9 +62,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use chrono::format::Item::Error;
     use super::*;
     use crate::core::token::SequenceFormat;
+    use chrono::format::Item::Error;
     use mockall::*;
     mock! {
         RawGen {}
@@ -76,7 +76,9 @@ mod tests {
     #[test]
     fn default_token_generator_generate_nominal_case() {
         let mut raw_generator = MockRawGen::new();
-        raw_generator.expect_generate().return_once(move |_| Ok("_1_".to_string()));
+        raw_generator
+            .expect_generate()
+            .return_once(move |_| Ok("_1_".to_string()));
         let generator = DefaultTokenGenerator::new(raw_generator);
         let policy = Policy {
             code: "sales".to_string(),
@@ -87,7 +89,10 @@ mod tests {
         };
 
         assert_eq!(
-            generator.generate(&policy, Secret::new("CARMEN MCCALLUM".to_string())).unwrap().deref(),
+            generator
+                .generate(&policy, Secret::new("CARMEN MCCALLUM".to_string()))
+                .unwrap()
+                .deref(),
             &"TOK-CA_1_LUM".to_string()
         );
     }
@@ -95,7 +100,11 @@ mod tests {
     #[test]
     fn default_token_generator_generate_propagate_error() {
         let mut raw_generator = MockRawGen::new();
-        raw_generator.expect_generate().return_once(move |_| Err(TokenError::GenerationFailure("db not reachable".to_string())));
+        raw_generator.expect_generate().return_once(move |_| {
+            Err(TokenError::GenerationFailure(
+                "db not reachable".to_string(),
+            ))
+        });
         let generator = DefaultTokenGenerator::new(raw_generator);
         let policy = Policy {
             code: "sales".to_string(),
@@ -106,7 +115,9 @@ mod tests {
         };
 
         assert_eq!(
-            generator.generate(&policy, Secret::new("CARMEN MCCALLUM".to_string())).expect_err("Expecting error"),
+            generator
+                .generate(&policy, Secret::new("CARMEN MCCALLUM".to_string()))
+                .expect_err("Expecting error"),
             TokenError::GenerationFailure("db not reachable".to_string())
         );
     }
