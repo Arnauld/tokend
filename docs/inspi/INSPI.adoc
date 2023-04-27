@@ -85,4 +85,4 @@ The constraint can be interpreted as saying:
 Don't allow two rows that have same product_id, same quantity and overlapping (&&) date ranges.
 ____
 
-
+https://blog.ippon.fr/2016/11/15/anonymisation-des-donnees/
