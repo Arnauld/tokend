@@ -3,7 +3,7 @@ use secrecy::Secret;
 use std::ops::Deref;
 use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq, Eq, Clone)]
 pub enum TokenError {
     #[error("Token Generation Failed {0}")]
     GenerationFailure(String),

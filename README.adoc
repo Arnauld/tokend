@@ -4,3 +4,15 @@
 [source,shell]
 $env:RUST_BACKTRACE=1; cargo test
 
+
+## Test coverage
+
+Requires https://github.com/xd009642/tarpaulin[`tarpaulin`]
+
+.Install tarpaulin
+[source,shell]
+cargo install cargo-tarpaulin
+
+.Execute test with coverage
+[source,shell]
+cargo tarpaulin -o html

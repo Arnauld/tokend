@@ -1,6 +1,7 @@
 use crate::core::token::{
     Policy, RawTokenGenerator, Token, TokenError, TokenFormat, TokenGenerator,
 };
+use crate::error::Error as TError;
 use secrecy::{ExposeSecret, Secret, Zeroize};
 use std::cmp::{max, min};
 use std::ops::Deref;
@@ -11,6 +12,17 @@ where
     G: RawTokenGenerator,
 {
     delegate: G,
+}
+
+impl<G> DefaultTokenGenerator<G>
+where
+    G: RawTokenGenerator,
+{
+    pub fn new(raw_generator: G) -> DefaultTokenGenerator<G> {
+        DefaultTokenGenerator {
+            delegate: raw_generator,
+        }
+    }
 }
 
 impl<G> TokenGenerator for DefaultTokenGenerator<G>
@@ -50,8 +62,54 @@ where
 
 #[cfg(test)]
 mod tests {
+    use chrono::format::Item::Error;
     use super::*;
     use crate::core::token::SequenceFormat;
+    use mockall::*;
+    mock! {
+        RawGen {}
+        impl RawTokenGenerator for RawGen {
+            fn generate(&self, token_format: &TokenFormat) -> Result<String, TokenError>;
+        }
+    }
+
+    #[test]
+    fn default_token_generator_generate_nominal_case() {
+        let mut raw_generator = MockRawGen::new();
+        raw_generator.expect_generate().return_once(move |_| Ok("_1_".to_string()));
+        let generator = DefaultTokenGenerator::new(raw_generator);
+        let policy = Policy {
+            code: "sales".to_string(),
+            format: TokenFormat::Sequence(SequenceFormat::Raw),
+            prefix: Some("TOK-".to_string()),
+            keep_left: 2,
+            keep_right: 3,
+        };
+
+        assert_eq!(
+            generator.generate(&policy, Secret::new("CARMEN MCCALLUM".to_string())).unwrap().deref(),
+            &"TOK-CA_1_LUM".to_string()
+        );
+    }
+
+    #[test]
+    fn default_token_generator_generate_propagate_error() {
+        let mut raw_generator = MockRawGen::new();
+        raw_generator.expect_generate().return_once(move |_| Err(TokenError::GenerationFailure("db not reachable".to_string())));
+        let generator = DefaultTokenGenerator::new(raw_generator);
+        let policy = Policy {
+            code: "sales".to_string(),
+            format: TokenFormat::Sequence(SequenceFormat::Raw),
+            prefix: Some("TOK-".to_string()),
+            keep_left: 2,
+            keep_right: 3,
+        };
+
+        assert_eq!(
+            generator.generate(&policy, Secret::new("CARMEN MCCALLUM".to_string())).expect_err("Expecting error"),
+            TokenError::GenerationFailure("db not reachable".to_string())
+        );
+    }
 
     #[test]
     fn format_nominal_case() {
