@@ -4,6 +4,19 @@
 [source,shell]
 $env:RUST_BACKTRACE=1; cargo test
 
+## Database Migration
+
+Requires https://github.com/launchbadge/sqlx/tree/main/sqlx-cli[`sqlx-cli`]
+
+.Install sqlx-cli
+[source,shell]
+cargo install sqlx-cli --no-default-features --features native-tls,postgres
+
+One does not rely on `DATABASE_URL` since it is configured with the application user (which should not be authorized to alter the schema and the tables...)
+
+.Database Migration
+[source,shell]
+DATABASE_URL=postgres://tokend_dev:dev_p@localhost:5432/tokend; sqlx migrate run
 
 ## Test coverage
 
