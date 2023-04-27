@@ -1,0 +1,14 @@
+database:
+  database_name: tokend
+  host: localhost
+  port: 5432
+  role_app:
+    username: tokend_dev_app
+    password: dev_p
+  role_mig:
+    username: tokend_dev_mig
+    password: dev_p
+  role_owner: tokend_dev
+
+web:
+  port: 5001

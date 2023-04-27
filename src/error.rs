@@ -62,4 +62,14 @@ pub enum Error {
     /// CallerType is not known
     #[error("Unknown CallerType: {0}")]
     UnknownCallerType(String),
+
+    /// Propagate a ConfigError
+    #[error("Unknown CallerType: {0}")]
+    ConfigError(config::ConfigError)
+}
+
+impl From<config::ConfigError> for Error {
+    fn from(err: config::ConfigError) -> Self {
+        Self::ConfigError(err)
+    }
 }

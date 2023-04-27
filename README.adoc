@@ -12,7 +12,8 @@ Requires https://github.com/launchbadge/sqlx/tree/main/sqlx-cli[`sqlx-cli`]
 [source,shell]
 cargo install sqlx-cli --no-default-features --features native-tls,postgres
 
-One does not rely on `DATABASE_URL` since it is configured with the application user (which should not be authorized to alter the schema and the tables...)
+[WARNING]
+One does not rely on `.env/DATABASE_URL` since it is configured with the application user (which should not be authorized to alter the schema and the tables...)
 
 .Database Migration
 [source,shell]
