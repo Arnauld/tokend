@@ -86,3 +86,16 @@ pub async fn spawn_db(settings: &DatabaseSettings) {
     create_database(settings).await;
     create_schema(settings).await;
 }
+
+pub async fn drop_db(settings: &DatabaseSettings) {
+    let options = settings.without_db(&DatabaseRole::Root);
+    let pool = PgPoolOptions::new()
+        .max_connections(2)
+        .connect_with(options)
+        .await
+        .expect("Failed to create connection pool");
+    sqlx::query(format!("DROP DATABASE {};", settings.database_name).as_str())
+        .execute(&pool)
+        .await
+        .expect("Failed to drop database.");
+}

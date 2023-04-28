@@ -1,4 +1,5 @@
 use sqlx::postgres::PgPoolOptions;
+use crate::helpers::startup;
 
 #[tokio::test]
 async fn database_url_is_not_empty() {
@@ -19,7 +20,7 @@ async fn get_configuration_test_config() {
 async fn create_new_database_and_execute_migrations() {
     std::env::set_var("APP_ENVIRONMENT", "local");
     std::env::set_var("APP_CONFIG_DIR", "./conf");
-    let settings = crate::helpers::startup::random_configuration().await;
+    let settings = startup::random_configuration().await;
 
-    crate::helpers::startup::spawn_db(&settings.database).await;
+    startup::spawn_db(&settings.database).await;
 }
