@@ -37,7 +37,7 @@ pub enum Error {
     Generic(ErrorCode, String, HashMap<String, String>),
 
     #[error("Could not execute query {0}")]
-    RepositoryError(String),
+    RepositoryError(sqlx::Error),
 
     /// A file references an Id that is not present
     #[error("The id {0} is not known")]
@@ -71,5 +71,11 @@ pub enum Error {
 impl From<config::ConfigError> for Error {
     fn from(err: config::ConfigError) -> Self {
         Self::ConfigError(err)
+    }
+}
+
+impl From<sqlx::Error> for Error {
+    fn from(err: sqlx::Error) -> Self {
+        Self::RepositoryError(err)
     }
 }

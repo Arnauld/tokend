@@ -107,7 +107,13 @@ async fn create_schema(settings: &DatabaseSettings) {
     pool.close().await
 }
 
+pub async fn spawn_app() {
+    Lazy::force(&TRACING);
+
+}
+
 pub async fn spawn_db(settings: &DatabaseSettings) {
+    Lazy::force(&TRACING);
     create_database(settings).await;
     create_schema(settings).await;
 }
