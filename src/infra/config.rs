@@ -10,25 +10,25 @@ use tracing::metadata::LevelFilter;
 
 use crate::error::Error as TError;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub web: WebSettings,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct WebSettings {
     pub port: u16,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct DatabaseCredentials {
     pub username: String,
     pub password: Secret<String>,
     pub on_behalf_of: Option<String>,
 }
 
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum DatabaseRole {
     Root,
     Application,
@@ -62,7 +62,7 @@ impl<'de> Deserialize<'de> for DatabaseRole {
     }
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct DatabaseSettings {
     pub host: String,
     pub port: u16,
@@ -93,6 +93,7 @@ impl DatabaseSettings {
     pub fn with_db(&self, role: &DatabaseRole) -> PgConnectOptions {
         let mut options = self.without_db(role).database(&self.database_name);
         options.log_statements(tracing_log::log::LevelFilter::Trace);
+        println!("<<< {:?}", &options);
         options
     }
 }

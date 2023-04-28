@@ -27,7 +27,7 @@ pub async fn random_configuration() -> Settings {
     let mut config =
         tokend::infra::config::get_configuration().expect("Failed to read configuration");
     config.web.port = 0;
-    config.database.database_name = format!("test_{}", chrono::Utc::now().timestamp());
+    config.database.database_name = format!("test_{}", chrono::Utc::now().format("%Y%m%d_%H%M%S_%f"));
     config
 }
 
@@ -38,10 +38,35 @@ async fn create_database(settings: &DatabaseSettings) {
         .connect_with(options)
         .await
         .expect("Failed to create connection pool");
-    sqlx::query(format!("CREATE DATABASE {};", settings.database_name).as_str())
-        .execute(&pool)
-        .await
-        .expect("Failed to create database.");
+
+    let sqls = format!(
+        "\
+        CREATE DATABASE {db_name} WITH
+            TEMPLATE = template0
+            ENCODING = 'UTF8'
+            TABLESPACE = pg_default
+            LC_COLLATE = 'en_US.utf8'
+            LC_CTYPE = 'en_US.utf8'
+            CONNECTION LIMIT = 255;
+        ALTER DATABASE {db_name} OWNER TO {owner};
+        GRANT CONNECT ON DATABASE {db_name} TO {owner};",
+        db_name = settings.database_name,
+        owner = settings
+            .roles
+            .get(&DatabaseRole::Migration)
+            .expect("Migration role expected")
+            .on_behalf_of
+            .as_ref()
+            .expect("Migration should act as database owner")
+    );
+
+    for sql in sqls.split(";") {
+        sqlx::query(sql)
+            .fetch_all(&pool)
+            .await
+            .expect(format!("Failed to execute statement: {}", sql).as_str());
+    }
+    pool.close().await
 }
 
 async fn create_schema(settings: &DatabaseSettings) {
@@ -77,9 +102,9 @@ async fn create_schema(settings: &DatabaseSettings) {
             .fetch_all(&mut tx)
             .await
             .expect("Failed to execute statement");
-
     }
     tx.commit().await.expect("Unable to commit transaction");
+    pool.close().await
 }
 
 pub async fn spawn_db(settings: &DatabaseSettings) {
@@ -98,4 +123,5 @@ pub async fn drop_db(settings: &DatabaseSettings) {
         .execute(&pool)
         .await
         .expect("Failed to drop database.");
+    pool.close().await
 }
