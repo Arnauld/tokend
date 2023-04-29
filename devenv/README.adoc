@@ -1,0 +1,32 @@
+
+.Open psql
+[source,bash]
+....
+:~$ docker exec -it devenv_postgres_1 /bin/bash
+:/# psql -U postgres
+psql (15.0 (Debian 15.0-1.pgdg110+1))
+Type "help" for help.
+
+postgres=#
+....
+
+.Drop all test databases (in psql)
+[source,postgresql]
+....
+SELECT 'DROP DATABASE ' || quote_ident(datname) || ';'
+FROM pg_database
+WHERE datname LIKE 'test%'
+  AND datistemplate=false
+\gexec
+....
+
+.Search for active sessions
+[source,postgresql]
+....
+select datname,pid,usename,state,wait_event,wait_event_type,query from pg_stat_activity where datname like 'test%';
+....
+
+.Terminate session by `pid`
+[source,postgresql]
+select pg_terminate_backend(211);
+....

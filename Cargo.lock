@@ -1886,6 +1886,7 @@ dependencies = [
  "jsonwebtoken",
  "mockall",
  "once_cell",
+ "rand",
  "regex",
  "secrecy",
  "serde",

@@ -22,8 +22,6 @@ async fn create_new_database_and_execute_migrations_and_drop_database() {
     std::env::set_var("APP_ENVIRONMENT", "local");
     std::env::set_var("APP_CONFIG_DIR", "./conf");
     let settings = startup::random_configuration().await;
-    println!(">>> {:?}", &settings);
-
     startup::spawn_db(&settings.database).await;
 
     let connect_options = settings.database.with_db(&DatabaseRole::Migration);

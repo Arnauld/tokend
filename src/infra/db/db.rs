@@ -1,8 +1,8 @@
-use std::ops::{Deref, DerefMut};
-use sqlx::{Pool, Postgres};
-use sqlx::pool::PoolConnection;
 use crate::core::context::ExecutionContext;
 use crate::error::Error as TError;
+use sqlx::pool::PoolConnection;
+use sqlx::{Acquire, Error, PgConnection, Pool, Postgres, Transaction};
+use std::ops::{Deref, DerefMut};
 
 pub struct ContextualizedPool {
     pool: Pool<Postgres>,
@@ -23,6 +23,10 @@ impl ContextualizedPool {
         let mut contextualized = ContextualizedConnection(conn);
         contextualized.contextualize(context).await?;
         Ok(contextualized)
+    }
+
+    pub async fn close(&self) {
+        self.pool.close().await
     }
 }
 
@@ -46,25 +50,21 @@ impl ContextualizedConnection {
             "var.caller_type".to_string(),
             context.caller.caller_type.to_string(),
         )
-            .await?;
+        .await?;
 
         set_config(
             self.deref_mut(),
             "var.caller_id".to_string(),
             context.caller.caller_id.to_string(),
         )
-            .await?;
+        .await?;
 
         let tid = match context.tenant.as_ref() {
             None => "".to_string(),
-            Some(s) => s.to_string()
+            Some(s) => s.to_string(),
         };
 
-        set_config(
-            self.deref_mut(),
-            "var.tenant_id".to_string(),
-            tid,
-        );
+        set_config(self.deref_mut(), "var.tenant_id".to_string(), tid);
 
         Ok(())
     }

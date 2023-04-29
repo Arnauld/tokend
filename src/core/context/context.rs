@@ -39,7 +39,7 @@ pub struct Caller {
 }
 
 impl Caller {
-    pub(crate) fn new(caller_id: String, caller_type: CallerType) -> Caller {
+    pub fn new(caller_id: String, caller_type: CallerType) -> Caller {
         Caller {
             caller_id,
             caller_type,
@@ -98,7 +98,7 @@ impl fmt::Display for PermissionControlState {
 }
 
 impl ExecutionContext {
-    pub(crate) fn new(
+    pub fn new(
         tenant: Option<TenantId>,
         caller: Caller,
         permissions: HashSet<Permission>,

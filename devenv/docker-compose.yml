@@ -2,8 +2,12 @@ version: '3.8'
 
 services:
   postgres:
+    container_name: db
     image: postgres:15.0
-    command: ["postgres", "-c", "log_statement=all", "-c", "shared_preload_libraries=pg_stat_statements"]
+    command: ["postgres",
+      "-c", "log_statement=all",
+      "-c", "log_line_prefix=%m [%p] [%u] ",
+      "-c", "shared_preload_libraries=pg_stat_statements"]
     environment:
       POSTGRES_DB: "unused"
       POSTGRES_USER: ${POSTGRES_USER:-postgres}

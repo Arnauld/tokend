@@ -1,8 +1,11 @@
+use rand::{thread_rng, Rng};
+use rand::distributions::Alphanumeric;
 use once_cell::sync::Lazy;
 
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions, PgSslMode};
-use sqlx::{ConnectOptions, PgConnection};
+use sqlx::{ConnectOptions, Connection, PgConnection, Pool, Postgres, Row};
 use std::convert::{TryFrom, TryInto};
+use tracing_log::log;
 
 use tokend::error::Error as TError;
 use tokend::infra::config::{DatabaseRole, DatabaseSettings, Settings};
@@ -24,10 +27,18 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 });
 
 pub async fn random_configuration() -> Settings {
+    let rand_string: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(5)
+        .map(char::from)
+        .collect::<String>()
+        .to_lowercase();
+
     let mut config =
         tokend::infra::config::get_configuration().expect("Failed to read configuration");
     config.web.port = 0;
-    config.database.database_name = format!("test_{}", chrono::Utc::now().format("%Y%m%d_%H%M%S_%f"));
+    config.database.database_name =
+        format!("test_{}_{}", chrono::Utc::now().format("%Y%m%d_%H%M%S"), rand_string);
     config
 }
 
@@ -40,8 +51,7 @@ async fn create_database(settings: &DatabaseSettings) {
         .expect("Failed to create connection pool");
 
     let sqls = format!(
-        "\
-        CREATE DATABASE {db_name} WITH
+        "CREATE DATABASE {db_name} WITH
             TEMPLATE = template0
             ENCODING = 'UTF8'
             TABLESPACE = pg_default
@@ -66,6 +76,7 @@ async fn create_database(settings: &DatabaseSettings) {
             .await
             .expect(format!("Failed to execute statement: {}", sql).as_str());
     }
+    tracing::info!("Database {} created", settings.database_name);
     pool.close().await
 }
 
@@ -91,10 +102,10 @@ async fn create_schema(settings: &DatabaseSettings) {
         ALTER DEFAULT PRIVILEGES FOR ROLE {owner} IN SCHEMA dev GRANT SELECT, UPDATE, USAGE          ON SEQUENCES TO {app};
         ALTER ROLE {mig} IN DATABASE {dbname} SET search_path to dev, public;
         GRANT {owner} TO {mig};",
-                      app=app.username,
-                      mig=mig.username,
-                      owner=mig.on_behalf_of.as_ref().unwrap(),
-                      dbname=settings.database_name);
+                       app = app.username,
+                       mig = mig.username,
+                       owner = mig.on_behalf_of.as_ref().unwrap(),
+                       dbname = settings.database_name);
 
     let mut tx = pool.begin().await.unwrap();
     for sql in sqls.split(";") {
@@ -104,12 +115,12 @@ async fn create_schema(settings: &DatabaseSettings) {
             .expect("Failed to execute statement");
     }
     tx.commit().await.expect("Unable to commit transaction");
+    tracing::info!("Schema created in {}", settings.database_name);
     pool.close().await
 }
 
 pub async fn spawn_app() {
     Lazy::force(&TRACING);
-
 }
 
 pub async fn spawn_db(settings: &DatabaseSettings) {
@@ -117,6 +128,42 @@ pub async fn spawn_db(settings: &DatabaseSettings) {
     create_database(settings).await;
     create_schema(settings).await;
 }
+
+pub async fn migrate_db(settings: &DatabaseSettings) {
+    let connect_options = settings.with_db(&DatabaseRole::Migration);
+    let pool = PgPoolOptions::new()
+        .max_connections(2)
+        .connect_with(connect_options)
+        .await
+        .expect("Failed to create connection pool");
+
+    // open connection in a block
+    // so that connection will be released by RAII and
+    // pool won't stuck when trying to close it
+    {
+        let mut connection = pool.acquire().await.expect("Failed to acquire connection");
+
+        if let Some(owner_role) = settings
+            .roles
+            .get(&DatabaseRole::Migration)
+            .expect("Missing Migration Role")
+            .on_behalf_of
+            .as_ref()
+        {
+            let vec = sqlx::query(format!("SET ROLE {}", owner_role).as_str())
+                .execute(&mut connection)
+                .await
+                .expect("Failed to set migration Role.");
+        }
+
+        sqlx::migrate!()
+            .run(&mut connection)
+            .await
+            .expect("Unable to migrate database");
+    }
+    pool.close().await;
+}
+
 
 pub async fn drop_db(settings: &DatabaseSettings) {
     let options = settings.without_db(&DatabaseRole::Root);

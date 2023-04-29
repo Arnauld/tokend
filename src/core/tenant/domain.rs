@@ -9,6 +9,12 @@ pub struct NewTenant {
     pub code: String,
 }
 
+impl NewTenant {
+    pub fn new(code: String) -> NewTenant {
+        NewTenant { code }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Tenant {
     /// Unique technical identifier
